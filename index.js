@@ -58,6 +58,25 @@ async function run() {
 
 
         //add or update
+
+        app.post('/userVerify', verifyJWT, async (req, res) => {
+            const s = req.body;
+            const decoded = req.decoded;
+
+            if (decoded.email !== req.query.email) {
+                res.status(403).send({ message: 'unauthorized access' })
+            }
+            
+            const query = { _id: ObjectId(s._id) }
+            delete s._id;
+            const updatedDoc = {
+                $set: s
+            }
+            let result = await userCollection.updateOne(query, updatedDoc);
+
+            res.send(result);
+        });
+
         app.post('/myproducts', verifyJWT, async (req, res) => {
             const s = req.body;
             let result;
