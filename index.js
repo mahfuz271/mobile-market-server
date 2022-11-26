@@ -35,15 +35,16 @@ async function run() {
         const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
         const userCollection = client.db('mobilemarket').collection('users');
 
-        app.post('/jwt', (req, res) => {
+        app.post('/jwt', async (req, res) => {
             const email = req.query.email;
 
             const query = { email: email };
             const user = await userCollection.findOne(query);
+            console.log(user);
             if (user) {
-                const token = jwt.sign(email, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1d' })
-                token.role = user.role;
-                res.send({ token })
+                let token = jwt.sign({email}, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1d' });
+                let role = user.role;
+                res.send({ token, role })
 
             }
             res.send({})
