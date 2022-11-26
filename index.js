@@ -40,10 +40,13 @@ async function run() {
             const token = jwt.sign(email, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1d' })
             res.send({ token })
         })
-        
-        app.post('/users', verifyJWT, async (req, res) => {
-            const s = req.body;
-            const result = await userCollection.insertOne(s);
+
+        app.post('/users', async (req, res) => {
+            const user = req.body;
+            const update = { $set: user};
+            const query = { email: update.email };
+            const options = { upsert: true };
+            const result = await userCollection.updateOne(query, update, options);
             res.send(result);
         });
     }
