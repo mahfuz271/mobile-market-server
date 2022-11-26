@@ -35,29 +35,23 @@ async function run() {
         const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
         const userCollection = client.db('mobilemarket').collection('users');
 
-        app.post('/jwt', async (req, res) => {
-            const email = req.query.email;
+        app.post('/jwtANDusers', async (req, res) => {
+            const u = req.body;
 
-            const query = { email: email };
-            const user = await userCollection.findOne(query);
-            console.log(user);
+            const query = { email: u.email };
+            let user = await userCollection.findOne(query);
+            if (!user && u?.insert) {
+                delete u.insert;
+                let status = await userCollection.insertOne(u);
+                user = await userCollection.findOne(query);
+            }
             if (user) {
-                let token = jwt.sign({email}, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1d' });
+                let token = jwt.sign({ email: u.email }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1d' });
                 let role = user.role;
-                res.send({ token, role })
-
+                return res.send({ token, role });
             }
             res.send({})
         })
-
-        app.post('/users', async (req, res) => {
-            const user = req.body;
-            const update = { $set: user };
-            const query = { email: update.email };
-            const options = { upsert: true };
-            const result = await userCollection.updateOne(query, update, options);
-            res.send(result);
-        });
     }
     finally {
 
