@@ -104,6 +104,12 @@ async function run() {
 
         app.get('/products', async (req, res) => {
             const query = { status: 'Unsold' }
+            if (req.query.brand) {
+                query.brand = req.query.brand
+            }
+            if (req.query.location) {
+                query.location = req.query.location
+            }
             const limit = parseInt(req.query?.limit);
             const cursor = productCollection.find(query).sort({ created: -1 }, function (err, cursor) { })
             if (limit > 0) {
