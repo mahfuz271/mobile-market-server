@@ -102,6 +102,17 @@ async function run() {
             res.send(c);
         });
 
+        app.get('/products', async (req, res) => {
+            const query = { status: 'Unsold' }
+            const limit = parseInt(req.query?.limit);
+            const cursor = productCollection.find(query).sort({ created: -1 }, function (err, cursor) { })
+            if (limit > 0) {
+                cursor.limit(limit);
+            }
+            const s = await cursor.toArray();
+            res.send(s);
+        });
+
         app.delete('/users/:id', verifyJWT, async (req, res) => {
             const id = req.params.id;
             const query = { _id: ObjectId(id) };
