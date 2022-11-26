@@ -34,6 +34,7 @@ async function run() {
     try {
         const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
         const userCollection = client.db('mobilemarket').collection('users');
+        const productCollection = client.db('mobilemarket').collection('products');
 
         app.post('/jwtANDusers', async (req, res) => {
             const u = req.body;
@@ -51,7 +52,36 @@ async function run() {
                 return res.send({ token, role });
             }
             res.send({})
+
         })
+
+
+        
+        //rating manage
+        app.post('/addProduct', verifyJWT, async (req, res) => {
+            const s = req.body;
+            s.created = new Date(Date.now());
+            const result = await productCollection.insertOne(s);
+            res.send(result);
+        });
+
+        app.get('/myproducts', verifyJWT, async (req, res) => {
+            const decoded = req.decoded;
+
+            if (decoded.email !== req.query.email) {
+                res.status(403).send({ message: 'unauthorized access' })
+            }
+
+            let query = {};
+            if (req.query.email) {
+                query = {
+                    email: req.query.email
+                }
+            }
+            const cursor = productCollection.find(query).sort({ created: -1 }, function (err, cursor) { })
+            const c = await cursor.toArray();
+            res.send(c);
+        });
     }
     finally {
 
