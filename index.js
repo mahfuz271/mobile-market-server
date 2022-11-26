@@ -37,13 +37,21 @@ async function run() {
 
         app.post('/jwt', (req, res) => {
             const email = req.query.email;
-            const token = jwt.sign(email, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1d' })
-            res.send({ token })
+
+            const query = { email: email };
+            const user = await userCollection.findOne(query);
+            if (user) {
+                const token = jwt.sign(email, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1d' })
+                token.role = user.role;
+                res.send({ token })
+
+            }
+            res.send({})
         })
 
         app.post('/users', async (req, res) => {
             const user = req.body;
-            const update = { $set: user};
+            const update = { $set: user };
             const query = { email: update.email };
             const options = { upsert: true };
             const result = await userCollection.updateOne(query, update, options);
