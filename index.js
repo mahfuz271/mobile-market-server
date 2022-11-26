@@ -101,6 +101,18 @@ async function run() {
             const c = await cursor.toArray();
             res.send(c);
         });
+
+        app.get('/users', verifyJWT, async (req, res) => {
+            let query = {};
+            if (req.query.role) {
+                query = {
+                    role: req.query.role
+                }
+            }
+            const cursor = userCollection.find(query)
+            const c = await cursor.toArray();
+            res.send(c);
+        });
     }
     finally {
 
