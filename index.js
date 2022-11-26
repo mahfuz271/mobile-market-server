@@ -64,7 +64,7 @@ async function run() {
             const decoded = req.decoded;
 
             if (decoded.email !== req.query.email) {
-                res.status(403).send({ message: 'unauthorized access' })
+               return res.status(403).send({ message: 'unauthorized access' })
             }
             
             const query = { _id: ObjectId(s._id) }
@@ -107,7 +107,7 @@ async function run() {
             const decoded = req.decoded;
 
             if (decoded.email !== req.query.email) {
-                res.status(403).send({ message: 'unauthorized access' })
+                return res.status(403).send({ message: 'unauthorized access' })
             }
 
             let query = {};
