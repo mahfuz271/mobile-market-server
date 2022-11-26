@@ -56,14 +56,33 @@ async function run() {
         })
 
 
-        
-        //rating manage
-        app.post('/addProduct', verifyJWT, async (req, res) => {
+
+        //add or update
+        app.post('/myproducts', verifyJWT, async (req, res) => {
             const s = req.body;
-            s.created = new Date(Date.now());
-            const result = await productCollection.insertOne(s);
+            let result;
+            if (s._id == 'new') {
+                delete s._id;
+                s.created = new Date(Date.now());
+                result = await productCollection.insertOne(s);
+            } else {
+                const query = { _id: ObjectId(s._id) }
+                delete s._id;
+                const updatedDoc = {
+                    $set: s
+                }
+                result = await productCollection.updateOne(query, updatedDoc);
+
+            }
             res.send(result);
         });
+
+        app.delete('/myproducts/:id', verifyJWT, async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+            const result = await productCollection.deleteOne(query);
+            res.send(result);
+        })
 
         app.get('/myproducts', verifyJWT, async (req, res) => {
             const decoded = req.decoded;
