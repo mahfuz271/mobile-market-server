@@ -97,19 +97,30 @@ async function run() {
         });
 
         app.post('/wishlist', verifyJWT, async (req, res) => {
-            const s = req.body;
+            let s = req.body;
+            const decoded = req.decoded;
             let result;
-            if (s._id == 'added') {
-                delete s._id;
+            if (s.task == 'added') {
                 delete s.task;
+                s.email = decoded.email;
                 s.created = new Date(Date.now());
                 result = await wishlistCollection.insertOne(s);
             } else {
-                const query = { _id: ObjectId(s._id) }
+                const query = { email: decoded.email, pid: s.pid }
                 result = await wishlistCollection.deleteOne(query);
 
             }
             res.send(result);
+        });
+
+        app.get('/wishlist', verifyJWT, async (req, res) => {
+            const decoded = req.decoded;
+            let query = {
+                email: decoded.email
+            }
+            const cursor = wishlistCollection.find(query).sort({ created: -1 }, function (err, cursor) { })
+            const c = await cursor.toArray();
+            res.send(c);
         });
 
         app.delete('/myproducts/:id', verifyJWT, async (req, res) => {
