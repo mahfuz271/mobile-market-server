@@ -5,6 +5,7 @@ const app = express()
 const jwt = require('jsonwebtoken');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const port = process.env.PORT || 5000;
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 app.use(cors())
 app.use(express.json());
@@ -37,6 +38,48 @@ async function run() {
         const productCollection = client.db('mobilemarket').collection('products');
         const wishlistCollection = client.db('mobilemarket').collection('wishlist');
         const orderCollection = client.db('mobilemarket').collection('orders');
+        const paymentsCollection = client.db('mobilemarket').collection('payments');
+
+        app.post('/create-payment-intent', async (req, res) => {
+            const o = req.body;
+            const price = o.price;
+            const amount = price * 100;
+
+            const paymentIntent = await stripe.paymentIntents.create({
+                currency: 'usd',
+                amount: amount,
+                "payment_method_types": [
+                    "card"
+                ]
+            });
+            res.send({
+                clientSecret: paymentIntent.client_secret,
+            });
+        });
+
+        app.post('/payments', async (req, res) => {
+            const payment = req.body;
+            const result = await paymentsCollection.insertOne(payment);
+            const id = payment.orderId
+            const filter = { _id: ObjectId(id) }
+            const updatedDoc = {
+                $set: {
+                    paid: 'Paid',
+                    transactionId: payment.transactionId
+                }
+            }
+            const updatedResult = await orderCollection.updateOne(filter, updatedDoc)
+            
+            //const query = { _id: ObjectId(payment.productId) }
+            // const updatedDoc = {
+            //     $set: {
+            //         status: 'Sold'
+            //     }
+            // }
+            // result = await productCollection.updateOne(query, updatedDoc);
+            
+            res.send(result);
+        })
 
         app.post('/jwtANDusers', async (req, res) => {
             const u = req.body;
@@ -161,17 +204,15 @@ async function run() {
         app.post('/placeOrder', verifyJWT, async (req, res) => {
             let s = req.body;
             const decoded = req.decoded;
+            const query = { pid: s.pid }
+            const exist = await orderCollection.countDocuments(query);
+            if (exist > 0) {
+                return res.send({});
+            }
             let result;
             s.email = decoded.email;
             s.created = new Date(Date.now());
             result = await orderCollection.insertOne(s);
-            const query = { _id: ObjectId(s.pid) }
-            const updatedDoc = {
-                $set: {
-                    status: 'Sold'
-                }
-            }
-            result = await productCollection.updateOne(query, updatedDoc);
             res.send(result);
         });
 
@@ -208,7 +249,7 @@ async function run() {
                 email: decoded.email
             }
             const c = await userCollection.findOne(query)
-            res.send({role: c.role});
+            res.send({ role: c.role });
         });
 
         app.get('/wishlist', verifyJWT, async (req, res) => {
@@ -220,6 +261,17 @@ async function run() {
             const c = await cursor.toArray();
             res.send(c);
         });
+
+        app.get('/order/:id', verifyJWT, async (req, res) => {
+            const id = req.params.id;
+            const decoded = req.decoded;
+            let query = {
+                email: decoded.email
+            }
+            query._id = ObjectId(id);
+            const result = await orderCollection.findOne(query);
+            res.send(result);
+        })
 
         app.delete('/users/:id', verifyJWT, async (req, res) => {
             const id = req.params.id;
