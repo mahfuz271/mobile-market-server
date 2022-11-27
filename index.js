@@ -192,6 +192,16 @@ async function run() {
             res.send(result);
         });
 
+        app.get('/MyOrders', verifyJWT, async (req, res) => {
+            const decoded = req.decoded;
+            let query = {
+                email: decoded.email
+            }
+            const cursor = orderCollection.find(query).sort({ created: -1 }, function (err, cursor) { })
+            const c = await cursor.toArray();
+            res.send(c);
+        });
+
         app.get('/wishlist', verifyJWT, async (req, res) => {
             const decoded = req.decoded;
             let query = {
