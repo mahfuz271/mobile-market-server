@@ -35,6 +35,7 @@ async function run() {
         const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
         const userCollection = client.db('mobilemarket').collection('users');
         const productCollection = client.db('mobilemarket').collection('products');
+        const wishlistCollection = client.db('mobilemarket').collection('wishlist');
 
         app.post('/jwtANDusers', async (req, res) => {
             const u = req.body;
@@ -63,9 +64,9 @@ async function run() {
             const decoded = req.decoded;
 
             if (decoded.email !== req.query.email) {
-               return res.status(403).send({ message: 'unauthorized access' })
+                return res.status(403).send({ message: 'unauthorized access' })
             }
-            
+
             const query = { _id: ObjectId(s._id) }
             delete s._id;
             const updatedDoc = {
@@ -90,6 +91,22 @@ async function run() {
                     $set: s
                 }
                 result = await productCollection.updateOne(query, updatedDoc);
+
+            }
+            res.send(result);
+        });
+
+        app.post('/wishlist', verifyJWT, async (req, res) => {
+            const s = req.body;
+            let result;
+            if (s._id == 'added') {
+                delete s._id;
+                delete s.task;
+                s.created = new Date(Date.now());
+                result = await wishlistCollection.insertOne(s);
+            } else {
+                const query = { _id: ObjectId(s._id) }
+                result = await wishlistCollection.deleteOne(query);
 
             }
             res.send(result);
@@ -121,12 +138,15 @@ async function run() {
         });
 
         app.get('/products', async (req, res) => {
-            const query = { status: 'Unsold' }
+            const query = { status: { $ne: "Sold" } }
             if (req.query.brand) {
                 query.brand = req.query.brand
             }
             if (req.query.location) {
                 query.location = req.query.location
+            }
+            if (req.query.advertise) {
+                query.advertise = "Yes"
             }
             const limit = parseInt(req.query?.limit);
             const cursor = productCollection.find(query).sort({ created: -1 }, function (err, cursor) { })
@@ -137,10 +157,19 @@ async function run() {
             res.send(s);
         });
 
-        app.get('/products/:id', async (req, res) => {
+        app.get('/products/:id', verifyJWT, async (req, res) => {
             const id = req.params.id;
+            const decoded = req.decoded;
             const query = { _id: ObjectId(id) };
-            const s = await productCollection.findOne(query);
+            let s = await productCollection.findOne(query);
+            if (s) {
+                const query2 = { email: s.email };
+                const u = await userCollection.findOne(query2);
+                s.user = u;
+            }
+            const query3 = { email: decoded.email, pid: id };
+            const w = await wishlistCollection.countDocuments(query3);
+            s.wishlist = w;
             res.send(s);
         });
 
