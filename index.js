@@ -36,6 +36,7 @@ async function run() {
         const userCollection = client.db('mobilemarket').collection('users');
         const productCollection = client.db('mobilemarket').collection('products');
         const wishlistCollection = client.db('mobilemarket').collection('wishlist');
+        const orderCollection = client.db('mobilemarket').collection('orders');
 
         app.post('/jwtANDusers', async (req, res) => {
             const u = req.body;
@@ -94,33 +95,6 @@ async function run() {
 
             }
             res.send(result);
-        });
-
-        app.post('/wishlist', verifyJWT, async (req, res) => {
-            let s = req.body;
-            const decoded = req.decoded;
-            let result;
-            if (s.task == 'added') {
-                delete s.task;
-                s.email = decoded.email;
-                s.created = new Date(Date.now());
-                result = await wishlistCollection.insertOne(s);
-            } else {
-                const query = { email: decoded.email, pid: s.pid }
-                result = await wishlistCollection.deleteOne(query);
-
-            }
-            res.send(result);
-        });
-
-        app.get('/wishlist', verifyJWT, async (req, res) => {
-            const decoded = req.decoded;
-            let query = {
-                email: decoded.email
-            }
-            const cursor = wishlistCollection.find(query).sort({ created: -1 }, function (err, cursor) { })
-            const c = await cursor.toArray();
-            res.send(c);
         });
 
         app.delete('/myproducts/:id', verifyJWT, async (req, res) => {
@@ -182,6 +156,50 @@ async function run() {
             const w = await wishlistCollection.countDocuments(query3);
             s.wishlist = w;
             res.send(s);
+        });
+
+        app.post('/placeOrder', verifyJWT, async (req, res) => {
+            let s = req.body;
+            const decoded = req.decoded;
+            let result;
+            s.email = decoded.email;
+            s.created = new Date(Date.now());
+            result = await orderCollection.insertOne(s);
+            const query = { _id: ObjectId(s.pid) }
+            const updatedDoc = {
+                $set: {
+                    status: 'Sold'
+                }
+            }
+            result = await productCollection.updateOne(query, updatedDoc);
+            res.send(result);
+        });
+
+        app.post('/wishlist', verifyJWT, async (req, res) => {
+            let s = req.body;
+            const decoded = req.decoded;
+            let result;
+            if (s.task == 'added') {
+                delete s.task;
+                s.email = decoded.email;
+                s.created = new Date(Date.now());
+                result = await wishlistCollection.insertOne(s);
+            } else {
+                const query = { email: decoded.email, pid: s.pid }
+                result = await wishlistCollection.deleteOne(query);
+
+            }
+            res.send(result);
+        });
+
+        app.get('/wishlist', verifyJWT, async (req, res) => {
+            const decoded = req.decoded;
+            let query = {
+                email: decoded.email
+            }
+            const cursor = wishlistCollection.find(query).sort({ created: -1 }, function (err, cursor) { })
+            const c = await cursor.toArray();
+            res.send(c);
         });
 
         app.delete('/users/:id', verifyJWT, async (req, res) => {
