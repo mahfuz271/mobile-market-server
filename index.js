@@ -5,7 +5,6 @@ const app = express()
 const jwt = require('jsonwebtoken');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const port = process.env.PORT || 5000;
-const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 app.use(cors())
 app.use(express.json());
@@ -41,6 +40,7 @@ async function run() {
         const paymentsCollection = client.db('mobilemarket').collection('payments');
 
         app.post('/create-payment-intent', async (req, res) => {
+            const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
             const o = req.body;
             const price = o.price;
             const amount = price * 100;
@@ -69,15 +69,15 @@ async function run() {
                 }
             }
             const updatedResult = await orderCollection.updateOne(filter, updatedDoc)
-            
-            //const query = { _id: ObjectId(payment.productId) }
-            // const updatedDoc = {
-            //     $set: {
-            //         status: 'Sold'
-            //     }
-            // }
-            // result = await productCollection.updateOne(query, updatedDoc);
-            
+
+            const query = { _id: ObjectId(payment.productId) }
+            const updatedDoc2 = {
+                $set: {
+                    status: 'Sold'
+                }
+            }
+            result = await productCollection.updateOne(query, updatedDoc2);
+
             res.send(result);
         })
 
