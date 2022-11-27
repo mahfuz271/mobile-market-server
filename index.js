@@ -202,13 +202,12 @@ async function run() {
             res.send(c);
         });
 
-        app.get('/getRole', verifyJWT, async (req, res) => {
+        app.post('/getRole', verifyJWT, async (req, res) => {
             const decoded = req.decoded;
             let query = {
                 email: decoded.email
             }
-            const cursor = userCollection.find(query)
-            const c = await cursor.toArray();
+            const c = await userCollection.findOne(query)
             res.send({role: c.role});
         });
 
