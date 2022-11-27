@@ -76,7 +76,7 @@ async function run() {
                     status: 'Sold'
                 }
             }
-            result = await productCollection.updateOne(query, updatedDoc2);
+            let a = await productCollection.updateOne(query, updatedDoc2);
 
             res.send(result);
         })
