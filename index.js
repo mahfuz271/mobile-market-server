@@ -202,6 +202,16 @@ async function run() {
             res.send(c);
         });
 
+        app.get('/getRole', verifyJWT, async (req, res) => {
+            const decoded = req.decoded;
+            let query = {
+                email: decoded.email
+            }
+            const cursor = userCollection.find(query)
+            const c = await cursor.toArray();
+            res.send({role: c.role});
+        });
+
         app.get('/wishlist', verifyJWT, async (req, res) => {
             const decoded = req.decoded;
             let query = {
