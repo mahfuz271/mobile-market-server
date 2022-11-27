@@ -58,7 +58,6 @@ async function run() {
 
 
         //add or update
-
         app.post('/userVerify', verifyJWT, async (req, res) => {
             const s = req.body;
             const decoded = req.decoded;
@@ -135,6 +134,13 @@ async function run() {
                 cursor.limit(limit);
             }
             const s = await cursor.toArray();
+            res.send(s);
+        });
+
+        app.get('/products/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+            const s = await productCollection.findOne(query);
             res.send(s);
         });
 
